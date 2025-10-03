@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmarklet Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f4f4f9;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    label {
+      display: block;
+      margin: 10px 0;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bookmarklet Generator</h1>
+    <form id="bookmarkletForm">
+      <label>
+        Choose an action:
+        <select id="action">
+          <option value="alert">Show an alert</option>
+          <option value="log">Log to console</option>
+          <option value="changeBg">Change background color</option>
+        </select>
+      </label>
+      <label>
+        Enter your message or color:
+        <input type="text" id="userInput" placeholder="e.g., Hello World or #ff0000">
+      </label>
+      <button type="button" id="generateButton">Generate Bookmarklet</button>
+    </form>
+    <input type="text" id="bookmarkletOutput" readonly placeholder="Your bookmarklet will appear here">
+    <button type="button" id="copyButton">Copy to Clipboard</button>
+  </div>
+
+  <script>
+    document.getElementById('generateButton').addEventListener('click', function() {
+      const action = document.getElementById('action').value;
+      const userInput = document.getElementById('userInput').value.trim();
+      let bookmarkletCode = '';
+
+      if (action === 'alert') {
+        bookmarkletCode = `javascript:(function(){alert(${JSON.stringify(userInput)});})();`;
+      } else if (action === 'log') {
+        bookmarkletCode = `javascript:(function(){console.log(${JSON.stringify(userInput)});})();`;
+      } else if (action === 'changeBg') {
+        bookmarkletCode = `javascript:(function(){document.body.style.backgroundColor=${JSON.stringify(userInput)};})();`;
+      }
+
+      document.getElementById('bookmarkletOutput').value = bookmarkletCode;
+    });
+
+    document.getElementById('copyButton').addEventListener('click', function() {
+      const outputField = document.getElementById('bookmarkletOutput');
+      outputField.select();
+      outputField.setSelectionRange(0, 99999); // For mobile devices
+      navigator.clipboard.writeText(outputField.value).then(() => {
+        alert('Bookmarklet copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy bookmarklet:', err);
+      });
+    });
+  </script>
+</body>
+</html>
