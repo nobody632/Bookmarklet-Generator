@@ -136,6 +136,47 @@
       font-size: 15px;
       box-sizing: border-box;
     }
+    .answer-actions-list {
+      width: 100%;
+      margin-top: 6px;
+      margin-bottom: 4px;
+    }
+    .answer-action-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 4px;
+      align-items: center;
+    }
+    .answer-action-row input, .answer-action-row select {
+      margin: 0;
+      padding: 4px;
+      font-size: 14px;
+    }
+    .remove-answer-btn {
+      background: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 2px 7px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .remove-answer-btn:hover {
+      background: #c9302c;
+    }
+    .add-answer-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 3px;
+    }
+    .add-answer-btn:hover {
+      background: var(--primary-dark);
+    }
     .toggle-dark {
       margin-top: 6px;
       margin-bottom: 16px;
@@ -199,12 +240,8 @@
       <div class="action-block" draggable="true" data-action="prompt">
         ❓ Prompt<br>
         <input type="text" class="block-input" placeholder="Prompt message" />
-        <select class="block-select" style="margin-top:4px;">
-          <option value="alert">Alert answer</option>
-          <option value="log">Log answer</option>
-          <option value="changeBg">Change BG</option>
-        </select>
-        <input type="text" class="block-input" placeholder="Action value" />
+        <div class="answer-actions-list"></div>
+        <button type="button" class="add-answer-btn">Add answer</button>
       </div>
     </div>
     <div>
@@ -221,6 +258,51 @@
     toggleDarkBtn.onclick = () => {
       document.body.classList.toggle('dark-mode');
     };
+
+    // Helper to add answer-action row to a block
+    function addAnswerRow(listElem, answer = '', action = 'alert', actionVal = '') {
+      const row = document.createElement('div');
+      row.className = 'answer-action-row';
+
+      const answerInput = document.createElement('input');
+      answerInput.className = 'block-input';
+      answerInput.type = 'text';
+      answerInput.placeholder = 'Answer value';
+      answerInput.value = answer;
+
+      const actionSelect = document.createElement('select');
+      actionSelect.className = 'block-select';
+      ['alert','log','changeBg'].forEach(opt=>{
+        const o = document.createElement('option');
+        o.value = opt;
+        o.textContent = ({
+          'alert': 'Alert',
+          'log': 'Log',
+          'changeBg': 'Change BG'
+        })[opt];
+        actionSelect.appendChild(o);
+      });
+      actionSelect.value = action;
+
+      const actionValInput = document.createElement('input');
+      actionValInput.className = 'block-input';
+      actionValInput.type = 'text';
+      actionValInput.placeholder = 'Action value';
+      actionValInput.value = actionVal;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'remove-answer-btn';
+      removeBtn.textContent = '✕';
+      removeBtn.onclick = () => row.remove();
+
+      row.appendChild(answerInput);
+      row.appendChild(actionSelect);
+      row.appendChild(actionValInput);
+      row.appendChild(removeBtn);
+
+      listElem.appendChild(row);
+    }
 
     // Drag and drop
     let draggedBlock = null;
@@ -256,10 +338,44 @@
       removeBtn.onclick = () => clone.remove();
       clone.appendChild(removeBtn);
 
-      // Make selects/inputs usable
+      // Make inputs/selects usable and enable answer-action events for prompt blocks
       Array.from(clone.querySelectorAll('input,select')).forEach(node => node.disabled = false);
 
+      if (clone.dataset.action === 'prompt') {
+        // Setup answer-action list and add-answer button
+        const listElem = clone.querySelector('.answer-actions-list');
+        listElem.innerHTML = '';
+        // If original block has rows, clone them
+        const origList = draggedBlock.querySelector('.answer-actions-list');
+        if (origList && origList.children.length) {
+          Array.from(origList.children).forEach(origRow => {
+            const origInputs = origRow.querySelectorAll('input,select');
+            addAnswerRow(listElem,
+              origInputs[0]?.value || '',
+              origInputs[1]?.value || 'alert',
+              origInputs[2]?.value || ''
+            );
+          });
+        } else {
+          // Add default one row if none exist
+          addAnswerRow(listElem);
+        }
+        // Add-answer button
+        const addBtn = clone.querySelector('.add-answer-btn');
+        addBtn.onclick = () => addAnswerRow(listElem);
+      }
+
       sequenceArea.appendChild(clone);
+    });
+
+    // Initial setup for action-panel prompt block
+    window.addEventListener('DOMContentLoaded', () => {
+      const promptBlock = actionsPanel.querySelector('.action-block[data-action="prompt"]');
+      const listElem = promptBlock.querySelector('.answer-actions-list');
+      listElem.innerHTML = '';
+      addAnswerRow(listElem);
+      const addBtn = promptBlock.querySelector('.add-answer-btn');
+      addBtn.onclick = () => addAnswerRow(listElem);
     });
 
     // Generate bookmarklet code
@@ -281,16 +397,22 @@
           codeSteps.push(`document.body.style.backgroundColor=${JSON.stringify(color)};`);
         } else if (type === 'prompt') {
           const promptMsg = block.querySelector('.block-input').value.trim();
-          const action = block.querySelector('.block-select').value;
-          const actionVal = block.querySelectorAll('.block-input')[1].value.trim();
           codeSteps.push(`var ans=prompt(${JSON.stringify(promptMsg)});`);
-          if (action === 'alert') {
-            codeSteps.push(`if(ans!==null){alert(${JSON.stringify(actionVal)});} `);
-          } else if (action === 'log') {
-            codeSteps.push(`if(ans!==null){console.log(${JSON.stringify(actionVal)});} `);
-          } else if (action === 'changeBg') {
-            codeSteps.push(`if(ans!==null){document.body.style.backgroundColor=${JSON.stringify(actionVal)};} `);
-          }
+          const listElem = block.querySelector('.answer-actions-list');
+          Array.from(listElem.children).forEach(row => {
+            const inputs = row.querySelectorAll('input,select');
+            const answerVal = inputs[0].value.trim();
+            const actionType = inputs[1].value;
+            const actionVal = inputs[2].value.trim();
+            if (!answerVal) return;
+            if (actionType === 'alert') {
+              codeSteps.push(`if(ans===${JSON.stringify(answerVal)}){alert(${JSON.stringify(actionVal)});} `);
+            } else if (actionType === 'log') {
+              codeSteps.push(`if(ans===${JSON.stringify(answerVal)}){console.log(${JSON.stringify(actionVal)});} `);
+            } else if (actionType === 'changeBg') {
+              codeSteps.push(`if(ans===${JSON.stringify(answerVal)}){document.body.style.backgroundColor=${JSON.stringify(actionVal)};} `);
+            }
+          });
         }
       }
       const bookmarkletCode = 'javascript:(function(){' + codeSteps.join(' ') + '})();';
