@@ -39,12 +39,32 @@
     button:hover {
       background-color: #0056b3;
     }
-    input[type="text"] {
+    input[type="text"], select {
       width: 100%;
       padding: 8px;
       margin-top: 10px;
       border: 1px solid #ccc;
       border-radius: 4px;
+    }
+    .prompt-options {
+      display: none;
+      margin-top: 10px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      padding: 10px;
+    }
+    .option-row {
+      display: flex;
+      gap: 10px;
+      margin: 6px 0;
+      align-items: center;
+    }
+    .option-row input {
+      width: 50%;
+      margin-top: 0;
+    }
+    .option-row select {
+      width: 40%;
     }
   </style>
 </head>
@@ -58,12 +78,37 @@
           <option value="alert">Show an alert</option>
           <option value="log">Log to console</option>
           <option value="changeBg">Change background color</option>
+          <option value="prompt">Prompt and act on answer</option>
         </select>
       </label>
-      <label>
+      <label id="mainInputLabel">
         Enter your message or color:
         <input type="text" id="userInput" placeholder="e.g., Hello World or #ff0000">
       </label>
+      <div class="prompt-options" id="promptOptions">
+        <label>
+          Prompt message:
+          <input type="text" id="promptMessage" placeholder="What is your name?">
+        </label>
+        <div class="option-row">
+          <input type="text" class="answer" id="answer1" placeholder="Answer 1 (e.g., yes)">
+          <select id="action1">
+            <option value="alert">Show alert</option>
+            <option value="log">Log to console</option>
+            <option value="changeBg">Change background color</option>
+          </select>
+          <input type="text" class="actionInput" id="actionInput1" placeholder="Message/Color for Answer 1">
+        </div>
+        <div class="option-row">
+          <input type="text" class="answer" id="answer2" placeholder="Answer 2 (e.g., no)">
+          <select id="action2">
+            <option value="alert">Show alert</option>
+            <option value="log">Log to console</option>
+            <option value="changeBg">Change background color</option>
+          </select>
+          <input type="text" class="actionInput" id="actionInput2" placeholder="Message/Color for Answer 2">
+        </div>
+      </div>
       <button type="button" id="generateButton">Generate Bookmarklet</button>
     </form>
     <input type="text" id="bookmarkletOutput" readonly placeholder="Your bookmarklet will appear here">
@@ -71,17 +116,63 @@
   </div>
 
   <script>
+    const actionSelect = document.getElementById('action');
+    const mainInputLabel = document.getElementById('mainInputLabel');
+    const userInput = document.getElementById('userInput');
+    const promptOptions = document.getElementById('promptOptions');
+
+    // Show/hide prompt options
+    actionSelect.addEventListener('change', function() {
+      if (actionSelect.value === 'prompt') {
+        promptOptions.style.display = 'block';
+        mainInputLabel.style.display = 'none';
+      } else {
+        promptOptions.style.display = 'none';
+        mainInputLabel.style.display = 'block';
+      }
+    });
+
     document.getElementById('generateButton').addEventListener('click', function() {
-      const action = document.getElementById('action').value;
-      const userInput = document.getElementById('userInput').value.trim();
+      const action = actionSelect.value;
       let bookmarkletCode = '';
 
       if (action === 'alert') {
-        bookmarkletCode = `javascript:(function(){alert(${JSON.stringify(userInput)});})();`;
+        bookmarkletCode = `javascript:(function(){alert(${JSON.stringify(userInput.value.trim())});})();`;
       } else if (action === 'log') {
-        bookmarkletCode = `javascript:(function(){console.log(${JSON.stringify(userInput)});})();`;
+        bookmarkletCode = `javascript:(function(){console.log(${JSON.stringify(userInput.value.trim())});})();`;
       } else if (action === 'changeBg') {
-        bookmarkletCode = `javascript:(function(){document.body.style.backgroundColor=${JSON.stringify(userInput)};})();`;
+        bookmarkletCode = `javascript:(function(){document.body.style.backgroundColor=${JSON.stringify(userInput.value.trim())};})();`;
+      } else if (action === 'prompt') {
+        const promptMessage = document.getElementById('promptMessage').value.trim();
+        const answer1 = document.getElementById('answer1').value.trim();
+        const action1 = document.getElementById('action1').value;
+        const actionInput1 = document.getElementById('actionInput1').value.trim();
+
+        const answer2 = document.getElementById('answer2').value.trim();
+        const action2 = document.getElementById('action2').value;
+        const actionInput2 = document.getElementById('actionInput2').value.trim();
+
+        // Generate action code for each answer
+        function actionCode(answer, action, value) {
+          if (!answer) return '';
+          if (action === 'alert') {
+            return `if(ans===${JSON.stringify(answer)}){alert(${JSON.stringify(value)});}`;
+          } else if (action === 'log') {
+            return `if(ans===${JSON.stringify(answer)}){console.log(${JSON.stringify(value)});}`;
+          } else if (action === 'changeBg') {
+            return `if(ans===${JSON.stringify(answer)}){document.body.style.backgroundColor=${JSON.stringify(value)};}`;
+          }
+          return '';
+        }
+
+        let code = `javascript:(function(){
+          var ans=prompt(${JSON.stringify(promptMessage)});
+          ${actionCode(answer1, action1, actionInput1)}
+          ${actionCode(answer2, action2, actionInput2)}
+        })();`;
+
+        // Minify and compress whitespace for bookmarklet
+        bookmarkletCode = code.replace(/\s+/g, ' ');
       }
 
       document.getElementById('bookmarkletOutput').value = bookmarkletCode;
