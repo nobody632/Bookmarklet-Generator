@@ -66,6 +66,30 @@
     .option-row select {
       width: 40%;
     }
+    .remove-row {
+      background: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .remove-row:hover {
+      background: #c9302c;
+    }
+    #addAnswerBox {
+      margin-top: 10px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    #addAnswerBox:hover {
+      background: #218838;
+    }
   </style>
 </head>
 <body>
@@ -90,24 +114,10 @@
           Prompt message:
           <input type="text" id="promptMessage" placeholder="What is your name?">
         </label>
-        <div class="option-row">
-          <input type="text" class="answer" id="answer1" placeholder="Answer 1 (e.g., yes)">
-          <select id="action1">
-            <option value="alert">Show alert</option>
-            <option value="log">Log to console</option>
-            <option value="changeBg">Change background color</option>
-          </select>
-          <input type="text" class="actionInput" id="actionInput1" placeholder="Message/Color for Answer 1">
+        <div id="answerActionsContainer">
+          <!-- Option rows will be added here -->
         </div>
-        <div class="option-row">
-          <input type="text" class="answer" id="answer2" placeholder="Answer 2 (e.g., no)">
-          <select id="action2">
-            <option value="alert">Show alert</option>
-            <option value="log">Log to console</option>
-            <option value="changeBg">Change background color</option>
-          </select>
-          <input type="text" class="actionInput" id="actionInput2" placeholder="Message/Color for Answer 2">
-        </div>
+        <button type="button" id="addAnswerBox">Add Answer Option</button>
       </div>
       <button type="button" id="generateButton">Generate Bookmarklet</button>
     </form>
@@ -120,6 +130,8 @@
     const mainInputLabel = document.getElementById('mainInputLabel');
     const userInput = document.getElementById('userInput');
     const promptOptions = document.getElementById('promptOptions');
+    const answerActionsContainer = document.getElementById('answerActionsContainer');
+    const addAnswerBox = document.getElementById('addAnswerBox');
 
     // Show/hide prompt options
     actionSelect.addEventListener('change', function() {
@@ -130,6 +142,63 @@
         promptOptions.style.display = 'none';
         mainInputLabel.style.display = 'block';
       }
+    });
+
+    function createOptionRow(answer = '', action = 'alert', actionInput = '') {
+      const row = document.createElement('div');
+      row.className = 'option-row';
+
+      const answerField = document.createElement('input');
+      answerField.type = 'text';
+      answerField.className = 'answer';
+      answerField.placeholder = 'Answer (e.g., yes)';
+      answerField.value = answer;
+
+      const actionSelect = document.createElement('select');
+      actionSelect.className = 'actionSelect';
+      ['alert', 'log', 'changeBg'].forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = 
+          val === 'alert' ? 'Show alert' :
+          val === 'log' ? 'Log to console' :
+          val === 'changeBg' ? 'Change background color' : val;
+        actionSelect.appendChild(opt);
+      });
+      actionSelect.value = action;
+
+      const actionInputField = document.createElement('input');
+      actionInputField.type = 'text';
+      actionInputField.className = 'actionInput';
+      actionInputField.placeholder = 'Message/Color for this answer';
+      actionInputField.value = actionInput;
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'remove-row';
+      removeButton.textContent = 'Remove';
+      removeButton.onclick = function() {
+        answerActionsContainer.removeChild(row);
+      };
+
+      row.appendChild(answerField);
+      row.appendChild(actionSelect);
+      row.appendChild(actionInputField);
+      row.appendChild(removeButton);
+
+      return row;
+    }
+
+    // Add two default rows
+    function addDefaultRows() {
+      answerActionsContainer.innerHTML = '';
+      answerActionsContainer.appendChild(createOptionRow());
+      answerActionsContainer.appendChild(createOptionRow());
+    }
+    addDefaultRows();
+
+    addAnswerBox.addEventListener('click', function() {
+      answerActionsContainer.appendChild(createOptionRow());
     });
 
     document.getElementById('generateButton').addEventListener('click', function() {
@@ -144,34 +213,22 @@
         bookmarkletCode = `javascript:(function(){document.body.style.backgroundColor=${JSON.stringify(userInput.value.trim())};})();`;
       } else if (action === 'prompt') {
         const promptMessage = document.getElementById('promptMessage').value.trim();
-        const answer1 = document.getElementById('answer1').value.trim();
-        const action1 = document.getElementById('action1').value;
-        const actionInput1 = document.getElementById('actionInput1').value.trim();
-
-        const answer2 = document.getElementById('answer2').value.trim();
-        const action2 = document.getElementById('action2').value;
-        const actionInput2 = document.getElementById('actionInput2').value.trim();
-
-        // Generate action code for each answer
-        function actionCode(answer, action, value) {
-          if (!answer) return '';
-          if (action === 'alert') {
-            return `if(ans===${JSON.stringify(answer)}){alert(${JSON.stringify(value)});}`;
-          } else if (action === 'log') {
-            return `if(ans===${JSON.stringify(answer)}){console.log(${JSON.stringify(value)});}`;
-          } else if (action === 'changeBg') {
-            return `if(ans===${JSON.stringify(answer)}){document.body.style.backgroundColor=${JSON.stringify(value)};}`;
+        const optionRows = answerActionsContainer.querySelectorAll('.option-row');
+        let actionsCode = '';
+        optionRows.forEach(row => {
+          const answer = row.querySelector('.answer').value.trim();
+          const actionSel = row.querySelector('.actionSelect').value;
+          const actionInput = row.querySelector('.actionInput').value.trim();
+          if (!answer) return;
+          if (actionSel === 'alert') {
+            actionsCode += `if(ans===${JSON.stringify(answer)}){alert(${JSON.stringify(actionInput)});}`;
+          } else if (actionSel === 'log') {
+            actionsCode += `if(ans===${JSON.stringify(answer)}){console.log(${JSON.stringify(actionInput)});}`;
+          } else if (actionSel === 'changeBg') {
+            actionsCode += `if(ans===${JSON.stringify(answer)}){document.body.style.backgroundColor=${JSON.stringify(actionInput)};}`;
           }
-          return '';
-        }
-
-        let code = `javascript:(function(){
-          var ans=prompt(${JSON.stringify(promptMessage)});
-          ${actionCode(answer1, action1, actionInput1)}
-          ${actionCode(answer2, action2, actionInput2)}
-        })();`;
-
-        // Minify and compress whitespace for bookmarklet
+        });
+        let code = `javascript:(function(){var ans=prompt(${JSON.stringify(promptMessage)});${actionsCode}})();`;
         bookmarkletCode = code.replace(/\s+/g, ' ');
       }
 
