@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bookmarklet Generator</title>
   <style>
+    :root {
+      --bg-light: #f4f4f9;
+      --bg-dark: #181920;
+      --container-light: #fff;
+      --container-dark: #23232b;
+      --text-light: #222;
+      --text-dark: #eee;
+      --primary: #007BFF;
+      --primary-dark: #0056b3;
+      --success: #28a745;
+      --success-dark: #218838;
+    }
     body {
       font-family: Arial, sans-serif;
       text-align: center;
@@ -15,227 +27,278 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background-color: #f4f4f9;
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark-mode {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
     }
     .container {
-      background: #fff;
-      padding: 20px;
+      background: var(--container-light);
+      padding: 24px;
       border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 480px;
+      transition: background 0.3s;
     }
-    label {
-      display: block;
-      margin: 10px 0;
+    body.dark-mode .container {
+      background: var(--container-dark);
     }
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      background-color: #007BFF;
+    h1 {
+      margin-bottom: 18px;
+    }
+    .actions-panel {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .action-block {
+      background: #eee;
+      border-radius: 8px;
+      padding: 10px;
+      min-width: 120px;
+      cursor: grab;
+      border: 2px solid transparent;
+      margin: 4px 0;
+      transition: background 0.2s, border 0.2s;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    body.dark-mode .action-block {
+      background: #31313d;
+      color: var(--text-dark);
+    }
+    .action-block.dragging {
+      opacity: 0.6;
+      border: 2px dashed var(--primary);
+    }
+    .sequence-area {
+      min-height: 56px;
+      background: #f9f9f9;
+      border: 2px dashed #bbb;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      padding: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      transition: background 0.3s;
+    }
+    body.dark-mode .sequence-area {
+      background: #22222a;
+    }
+    .sequence-block {
+      background: #fff;
+      border: 1px solid #bbb;
+      border-radius: 5px;
+      padding: 8px;
+      min-width: 110px;
+      margin: 4px 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+    }
+    body.dark-mode .sequence-block {
+      background: #30303b;
+      color: var(--text-dark);
+      border: 1px solid #444;
+    }
+    .remove-seq-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 2px 7px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .remove-seq-btn:hover {
+      background: #c9302c;
+    }
+    .block-input, .block-select {
+      width: 100%;
+      margin-top: 6px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+    .toggle-dark {
+      margin-top: 6px;
+      margin-bottom: 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 7px 14px;
+      cursor: pointer;
+    }
+    .toggle-dark:hover {
+      background: var(--primary-dark);
+    }
+    #generateButton, #copyButton {
+      margin-top: 18px;
+      padding: 10px 22px;
+      background-color: var(--success);
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #0056b3;
+    #generateButton:hover, #copyButton:hover {
+      background-color: var(--success-dark);
     }
-    input[type="text"], select {
+    #bookmarkletOutput {
+      margin-top: 13px;
       width: 100%;
       padding: 8px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
+      font-size: 15px;
+      border: 1px solid #bbb;
       border-radius: 4px;
-    }
-    .prompt-options {
-      display: none;
-      margin-top: 10px;
       background: #f9f9f9;
-      border-radius: 6px;
-      padding: 10px;
+      color: #333;
+      box-sizing: border-box;
     }
-    .option-row {
-      display: flex;
-      gap: 10px;
-      margin: 6px 0;
-      align-items: center;
-    }
-    .option-row input {
-      width: 50%;
-      margin-top: 0;
-    }
-    .option-row select {
-      width: 40%;
-    }
-    .remove-row {
-      background: #d9534f;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      padding: 5px 10px;
-      cursor: pointer;
-      margin-left: 10px;
-    }
-    .remove-row:hover {
-      background: #c9302c;
-    }
-    #addAnswerBox {
-      margin-top: 10px;
-      background: #28a745;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-    #addAnswerBox:hover {
-      background: #218838;
+    body.dark-mode #bookmarkletOutput {
+      background: #23232b;
+      color: #eee;
+      border: 1px solid #444;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Bookmarklet Generator</h1>
-    <form id="bookmarkletForm">
-      <label>
-        Choose an action:
-        <select id="action">
-          <option value="alert">Show an alert</option>
-          <option value="log">Log to console</option>
-          <option value="changeBg">Change background color</option>
-          <option value="prompt">Prompt and act on answer</option>
-        </select>
-      </label>
-      <label id="mainInputLabel">
-        Enter your message or color:
-        <input type="text" id="userInput" placeholder="e.g., Hello World or #ff0000">
-      </label>
-      <div class="prompt-options" id="promptOptions">
-        <label>
-          Prompt message:
-          <input type="text" id="promptMessage" placeholder="What is your name?">
-        </label>
-        <div id="answerActionsContainer">
-          <!-- Option rows will be added here -->
-        </div>
-        <button type="button" id="addAnswerBox">Add Answer Option</button>
+    <button class="toggle-dark" id="toggleDarkBtn">Toggle Dark Mode</button>
+    <div class="actions-panel" id="actionsPanel">
+      <div class="action-block" draggable="true" data-action="alert">
+        🔔 Alert<br>
+        <input type="text" class="block-input" placeholder="Message" />
       </div>
-      <button type="button" id="generateButton">Generate Bookmarklet</button>
-    </form>
+      <div class="action-block" draggable="true" data-action="log">
+        📝 Log<br>
+        <input type="text" class="block-input" placeholder="Log message" />
+      </div>
+      <div class="action-block" draggable="true" data-action="changeBg">
+        🎨 Change BG<br>
+        <input type="text" class="block-input" placeholder="Color e.g. #ff0" />
+      </div>
+      <div class="action-block" draggable="true" data-action="prompt">
+        ❓ Prompt<br>
+        <input type="text" class="block-input" placeholder="Prompt message" />
+        <select class="block-select" style="margin-top:4px;">
+          <option value="alert">Alert answer</option>
+          <option value="log">Log answer</option>
+          <option value="changeBg">Change BG</option>
+        </select>
+        <input type="text" class="block-input" placeholder="Action value" />
+      </div>
+    </div>
+    <div>
+      <h3>Sequence (Drag actions here in order):</h3>
+      <div class="sequence-area" id="sequenceArea"></div>
+    </div>
+    <button type="button" id="generateButton">Generate Bookmarklet</button>
     <input type="text" id="bookmarkletOutput" readonly placeholder="Your bookmarklet will appear here">
     <button type="button" id="copyButton">Copy to Clipboard</button>
   </div>
-
   <script>
-    const actionSelect = document.getElementById('action');
-    const mainInputLabel = document.getElementById('mainInputLabel');
-    const userInput = document.getElementById('userInput');
-    const promptOptions = document.getElementById('promptOptions');
-    const answerActionsContainer = document.getElementById('answerActionsContainer');
-    const addAnswerBox = document.getElementById('addAnswerBox');
+    // Dark mode toggle
+    const toggleDarkBtn = document.getElementById('toggleDarkBtn');
+    toggleDarkBtn.onclick = () => {
+      document.body.classList.toggle('dark-mode');
+    };
 
-    // Show/hide prompt options
-    actionSelect.addEventListener('change', function() {
-      if (actionSelect.value === 'prompt') {
-        promptOptions.style.display = 'block';
-        mainInputLabel.style.display = 'none';
-      } else {
-        promptOptions.style.display = 'none';
-        mainInputLabel.style.display = 'block';
+    // Drag and drop
+    let draggedBlock = null;
+    const actionsPanel = document.getElementById('actionsPanel');
+    const sequenceArea = document.getElementById('sequenceArea');
+
+    actionsPanel.addEventListener('dragstart', function(e) {
+      if (e.target.classList.contains('action-block')) {
+        draggedBlock = e.target;
+        e.target.classList.add('dragging');
       }
     });
-
-    function createOptionRow(answer = '', action = 'alert', actionInput = '') {
-      const row = document.createElement('div');
-      row.className = 'option-row';
-
-      const answerField = document.createElement('input');
-      answerField.type = 'text';
-      answerField.className = 'answer';
-      answerField.placeholder = 'Answer (e.g., yes)';
-      answerField.value = answer;
-
-      const actionSelect = document.createElement('select');
-      actionSelect.className = 'actionSelect';
-      ['alert', 'log', 'changeBg'].forEach(val => {
-        const opt = document.createElement('option');
-        opt.value = val;
-        opt.textContent = 
-          val === 'alert' ? 'Show alert' :
-          val === 'log' ? 'Log to console' :
-          val === 'changeBg' ? 'Change background color' : val;
-        actionSelect.appendChild(opt);
-      });
-      actionSelect.value = action;
-
-      const actionInputField = document.createElement('input');
-      actionInputField.type = 'text';
-      actionInputField.className = 'actionInput';
-      actionInputField.placeholder = 'Message/Color for this answer';
-      actionInputField.value = actionInput;
-
-      const removeButton = document.createElement('button');
-      removeButton.type = 'button';
-      removeButton.className = 'remove-row';
-      removeButton.textContent = 'Remove';
-      removeButton.onclick = function() {
-        answerActionsContainer.removeChild(row);
-      };
-
-      row.appendChild(answerField);
-      row.appendChild(actionSelect);
-      row.appendChild(actionInputField);
-      row.appendChild(removeButton);
-
-      return row;
-    }
-
-    // Add two default rows
-    function addDefaultRows() {
-      answerActionsContainer.innerHTML = '';
-      answerActionsContainer.appendChild(createOptionRow());
-      answerActionsContainer.appendChild(createOptionRow());
-    }
-    addDefaultRows();
-
-    addAnswerBox.addEventListener('click', function() {
-      answerActionsContainer.appendChild(createOptionRow());
+    actionsPanel.addEventListener('dragend', function(e) {
+      if (draggedBlock) draggedBlock.classList.remove('dragging');
+      draggedBlock = null;
     });
 
-    document.getElementById('generateButton').addEventListener('click', function() {
-      const action = actionSelect.value;
-      let bookmarkletCode = '';
+    sequenceArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+    });
+    sequenceArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      if (!draggedBlock) return;
+      // Clone the block into the sequence area
+      const clone = draggedBlock.cloneNode(true);
+      clone.className = 'sequence-block';
 
-      if (action === 'alert') {
-        bookmarkletCode = `javascript:(function(){alert(${JSON.stringify(userInput.value.trim())});})();`;
-      } else if (action === 'log') {
-        bookmarkletCode = `javascript:(function(){console.log(${JSON.stringify(userInput.value.trim())});})();`;
-      } else if (action === 'changeBg') {
-        bookmarkletCode = `javascript:(function(){document.body.style.backgroundColor=${JSON.stringify(userInput.value.trim())};})();`;
-      } else if (action === 'prompt') {
-        const promptMessage = document.getElementById('promptMessage').value.trim();
-        const optionRows = answerActionsContainer.querySelectorAll('.option-row');
-        let actionsCode = '';
-        optionRows.forEach(row => {
-          const answer = row.querySelector('.answer').value.trim();
-          const actionSel = row.querySelector('.actionSelect').value;
-          const actionInput = row.querySelector('.actionInput').value.trim();
-          if (!answer) return;
-          if (actionSel === 'alert') {
-            actionsCode += `if(ans===${JSON.stringify(answer)}){alert(${JSON.stringify(actionInput)});}`;
-          } else if (actionSel === 'log') {
-            actionsCode += `if(ans===${JSON.stringify(answer)}){console.log(${JSON.stringify(actionInput)});}`;
-          } else if (actionSel === 'changeBg') {
-            actionsCode += `if(ans===${JSON.stringify(answer)}){document.body.style.backgroundColor=${JSON.stringify(actionInput)};}`;
+      // Remove draggable, add remove button
+      clone.removeAttribute('draggable');
+      const removeBtn = document.createElement('button');
+      removeBtn.textContent = '✕';
+      removeBtn.className = 'remove-seq-btn';
+      removeBtn.onclick = () => clone.remove();
+      clone.appendChild(removeBtn);
+
+      // Make selects/inputs usable
+      Array.from(clone.querySelectorAll('input,select')).forEach(node => node.disabled = false);
+
+      sequenceArea.appendChild(clone);
+    });
+
+    // Generate bookmarklet code
+    document.getElementById('generateButton').onclick = function() {
+      const blocks = Array.from(sequenceArea.getElementsByClassName('sequence-block'));
+      if (!blocks.length) return alert('Add at least one action to the sequence.');
+
+      let codeSteps = [];
+      for (let block of blocks) {
+        const type = block.dataset.action;
+        if (type === 'alert') {
+          const msg = block.querySelector('.block-input').value.trim();
+          codeSteps.push(`alert(${JSON.stringify(msg)});`);
+        } else if (type === 'log') {
+          const msg = block.querySelector('.block-input').value.trim();
+          codeSteps.push(`console.log(${JSON.stringify(msg)});`);
+        } else if (type === 'changeBg') {
+          const color = block.querySelector('.block-input').value.trim();
+          codeSteps.push(`document.body.style.backgroundColor=${JSON.stringify(color)};`);
+        } else if (type === 'prompt') {
+          const promptMsg = block.querySelector('.block-input').value.trim();
+          const action = block.querySelector('.block-select').value;
+          const actionVal = block.querySelectorAll('.block-input')[1].value.trim();
+          codeSteps.push(`var ans=prompt(${JSON.stringify(promptMsg)});`);
+          if (action === 'alert') {
+            codeSteps.push(`if(ans!==null){alert(${JSON.stringify(actionVal)});} `);
+          } else if (action === 'log') {
+            codeSteps.push(`if(ans!==null){console.log(${JSON.stringify(actionVal)});} `);
+          } else if (action === 'changeBg') {
+            codeSteps.push(`if(ans!==null){document.body.style.backgroundColor=${JSON.stringify(actionVal)};} `);
           }
-        });
-        let code = `javascript:(function(){var ans=prompt(${JSON.stringify(promptMessage)});${actionsCode}})();`;
-        bookmarkletCode = code.replace(/\s+/g, ' ');
+        }
       }
+      const bookmarkletCode = 'javascript:(function(){' + codeSteps.join(' ') + '})();';
+      document.getElementById('bookmarkletOutput').value = bookmarkletCode.replace(/\s+/g, ' ');
+    };
 
-      document.getElementById('bookmarkletOutput').value = bookmarkletCode;
-    });
-
-    document.getElementById('copyButton').addEventListener('click', function() {
+    // Copy to clipboard
+    document.getElementById('copyButton').onclick = function() {
       const outputField = document.getElementById('bookmarkletOutput');
       outputField.select();
       outputField.setSelectionRange(0, 99999); // For mobile devices
@@ -244,7 +307,7 @@
       }).catch(err => {
         console.error('Failed to copy bookmarklet:', err);
       });
-    });
+    };
   </script>
 </body>
 </html>
