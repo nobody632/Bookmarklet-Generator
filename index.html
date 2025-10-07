@@ -312,6 +312,17 @@
               <option value="bottom">Bottom</option>
             </select>
           </div>
+          <!-- New Fun Visual Effects Block -->
+          <div class="action-block" draggable="true" data-action="visualEffect">
+            🎉 Fun Effect<br>
+            <select class="block-select">
+              <option value="danceParty">Dance Party</option>
+              <option value="confetti">Confetti Explosion</option>
+              <option value="invertColors">Invert Colors</option>
+              <option value="rainbowBg">Rainbow Background</option>
+              <option value="shakeEverything">Shake Everything</option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="sequence-panel">
@@ -613,6 +624,64 @@
                 ? 'document.body.prepend(div);'
                 : 'document.body.append(div);')
             );
+          }
+        } else if (type === 'visualEffect') {
+          const effect = block.querySelector('.block-select').value;
+          if (effect === 'danceParty') {
+            codeSteps.push(`
+              document.querySelectorAll('*').forEach(e => {
+                e.style.transition = 'transform 0.2s';
+                let i = 0;
+                const interval = setInterval(() => {
+                  e.style.transform = 'rotate(' + (Math.sin(i)*10) + 'deg)';
+                  i += 0.2;
+                }, 100);
+                setTimeout(() => { clearInterval(interval); e.style.transform = ''; }, 2000);
+              });
+            `);
+          } else if (effect === 'confetti') {
+            codeSteps.push(`
+              (function(){
+                for(let i=0;i<80;i++){
+                  var d=document.createElement('div');
+                  d.textContent='🎉';
+                  d.style.position='fixed';
+                  d.style.left=Math.random()*100+'vw';
+                  d.style.top=Math.random()*100+'vh';
+                  d.style.fontSize=(30+Math.random()*30)+'px';
+                  d.style.pointerEvents='none';
+                  document.body.appendChild(d);
+                  setTimeout(()=>d.remove(), 2000+Math.random()*1000);
+                }
+              })();
+            `);
+          } else if (effect === 'invertColors') {
+            codeSteps.push(`
+              document.body.style.filter = 'invert(1)';
+              setTimeout(()=>{document.body.style.filter='';}, 3000);
+            `);
+          } else if (effect === 'rainbowBg') {
+            codeSteps.push(`
+              let rainbowInt = setInterval(()=>{
+                let h = Math.floor(Math.random()*360);
+                document.body.style.backgroundColor='hsl('+h+',100%,70%)';
+              },200);
+              setTimeout(()=>{clearInterval(rainbowInt);document.body.style.backgroundColor='';},3000);
+            `);
+          } else if (effect === 'shakeEverything') {
+            codeSteps.push(`
+              document.querySelectorAll('*').forEach(e=>{
+                e.style.animation='shake 0.5s';
+                e.style.animationIterationCount='infinite';
+              });
+              var style=document.createElement('style');
+              style.textContent='@keyframes shake{0%{transform:translate(0,0)}20%{transform:translate(-5px,0)}40%{transform:translate(5px,0)}60%{transform:translate(-5px,0)}80%{transform:translate(5px,0)}100%{transform:translate(0,0)}}';
+              document.head.appendChild(style);
+              setTimeout(()=>{
+                document.querySelectorAll('*').forEach(e=>{e.style.animation='';});
+                style.remove();
+              },2000);
+            `);
           }
         }
       }
