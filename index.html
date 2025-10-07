@@ -243,6 +243,22 @@
         <div class="answer-actions-list"></div>
         <button type="button" class="add-answer-btn">Add answer</button>
       </div>
+      <div class="action-block" draggable="true" data-action="hideImages">
+        🖼️ Hide Images
+      </div>
+      <div class="action-block" draggable="true" data-action="replaceWords">
+        🔄 Replace Words<br>
+        <input type="text" class="block-input" placeholder="Find this word" />
+        <input type="text" class="block-input" placeholder="Replace with" />
+      </div>
+      <div class="action-block" draggable="true" data-action="insertText">
+        🏷️ Insert Text<br>
+        <input type="text" class="block-input" placeholder="Text to insert" />
+        <select class="block-select">
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+        </select>
+      </div>
     </div>
     <div>
       <h3>Sequence (Drag actions here in order):</h3>
@@ -413,6 +429,29 @@
               codeSteps.push(`if(ans===${JSON.stringify(answerVal)}){document.body.style.backgroundColor=${JSON.stringify(actionVal)};} `);
             }
           });
+        } else if (type === 'hideImages') {
+          codeSteps.push('document.querySelectorAll("img").forEach(img => img.style.display="none");');
+        } else if (type === 'replaceWords') {
+          const inputs = block.querySelectorAll('.block-input');
+          const findWord = inputs[0].value.trim();
+          const replaceWord = inputs[1].value.trim();
+          if (findWord && replaceWord) {
+            // Use RegExp for global replacement
+            codeSteps.push(
+              `document.body.innerHTML=document.body.innerHTML.replace(new RegExp(${JSON.stringify(findWord)},'g'),${JSON.stringify(replaceWord)});`
+            );
+          }
+        } else if (type === 'insertText') {
+          const text = block.querySelector('.block-input').value.trim();
+          const position = block.querySelector('.block-select').value;
+          if (text) {
+            codeSteps.push(
+              `var div=document.createElement("div");div.textContent=${JSON.stringify(text)};` +
+              (position === 'top'
+                ? 'document.body.prepend(div);'
+                : 'document.body.append(div);')
+            );
+          }
         }
       }
       const bookmarkletCode = 'javascript:(function(){' + codeSteps.join(' ') + '})();';
