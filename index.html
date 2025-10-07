@@ -24,9 +24,9 @@
       padding: 0;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
       background-color: var(--bg-light);
       color: var(--text-light);
       transition: background 0.3s, color 0.3s;
@@ -41,8 +41,9 @@
       border-radius: 8px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 480px;
+      max-width: 900px;
       transition: background 0.3s;
+      margin: 40px auto;
     }
     body.dark-mode .container {
       background: var(--container-dark);
@@ -50,12 +51,32 @@
     h1 {
       margin-bottom: 18px;
     }
+    .main-flex {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .actions-panel, .sequence-panel {
+      flex: 1 1 0;
+      min-width: 340px;
+      max-width: 420px;
+    }
+    @media (max-width: 950px) {
+      .main-flex { flex-direction: column; }
+      .actions-panel, .sequence-panel { max-width: 100%; }
+    }
     .actions-panel {
       display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .actions-list {
+      display: flex;
+      flex-direction: column;
       gap: 10px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-      justify-content: center;
     }
     .action-block {
       background: #eee;
@@ -79,6 +100,9 @@
       opacity: 0.6;
       border: 2px dashed var(--primary);
     }
+    .sequence-panel h3 {
+      margin-bottom: 8px;
+    }
     .sequence-area {
       min-height: 56px;
       background: #f9f9f9;
@@ -90,6 +114,7 @@
       gap: 8px;
       flex-wrap: wrap;
       transition: background 0.3s;
+      min-width: 320px;
     }
     body.dark-mode .sequence-area {
       background: #22222a;
@@ -224,45 +249,49 @@
   <div class="container">
     <h1>Bookmarklet Generator</h1>
     <button class="toggle-dark" id="toggleDarkBtn">Toggle Dark Mode</button>
-    <div class="actions-panel" id="actionsPanel">
-      <div class="action-block" draggable="true" data-action="alert">
-        🔔 Alert<br>
-        <input type="text" class="block-input" placeholder="Message" />
+    <div class="main-flex">
+      <div class="actions-panel" id="actionsPanel">
+        <div class="actions-list">
+          <div class="action-block" draggable="true" data-action="alert">
+            🔔 Alert<br>
+            <input type="text" class="block-input" placeholder="Message" />
+          </div>
+          <div class="action-block" draggable="true" data-action="log">
+            📝 Log<br>
+            <input type="text" class="block-input" placeholder="Log message" />
+          </div>
+          <div class="action-block" draggable="true" data-action="changeBg">
+            🎨 Change BG<br>
+            <input type="text" class="block-input" placeholder="Color e.g. #ff0" />
+          </div>
+          <div class="action-block" draggable="true" data-action="prompt">
+            ❓ Prompt<br>
+            <input type="text" class="block-input" placeholder="Prompt message" />
+            <div class="answer-actions-list"></div>
+            <button type="button" class="add-answer-btn">Add answer</button>
+          </div>
+          <div class="action-block" draggable="true" data-action="hideImages">
+            🖼️ Hide Images
+          </div>
+          <div class="action-block" draggable="true" data-action="replaceWords">
+            🔄 Replace Words<br>
+            <input type="text" class="block-input" placeholder="Find this word" />
+            <input type="text" class="block-input" placeholder="Replace with" />
+          </div>
+          <div class="action-block" draggable="true" data-action="insertText">
+            🏷️ Insert Text<br>
+            <input type="text" class="block-input" placeholder="Text to insert" />
+            <select class="block-select">
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <div class="action-block" draggable="true" data-action="log">
-        📝 Log<br>
-        <input type="text" class="block-input" placeholder="Log message" />
+      <div class="sequence-panel">
+        <h3>Sequence (Drag actions here in order):</h3>
+        <div class="sequence-area" id="sequenceArea"></div>
       </div>
-      <div class="action-block" draggable="true" data-action="changeBg">
-        🎨 Change BG<br>
-        <input type="text" class="block-input" placeholder="Color e.g. #ff0" />
-      </div>
-      <div class="action-block" draggable="true" data-action="prompt">
-        ❓ Prompt<br>
-        <input type="text" class="block-input" placeholder="Prompt message" />
-        <div class="answer-actions-list"></div>
-        <button type="button" class="add-answer-btn">Add answer</button>
-      </div>
-      <div class="action-block" draggable="true" data-action="hideImages">
-        🖼️ Hide Images
-      </div>
-      <div class="action-block" draggable="true" data-action="replaceWords">
-        🔄 Replace Words<br>
-        <input type="text" class="block-input" placeholder="Find this word" />
-        <input type="text" class="block-input" placeholder="Replace with" />
-      </div>
-      <div class="action-block" draggable="true" data-action="insertText">
-        🏷️ Insert Text<br>
-        <input type="text" class="block-input" placeholder="Text to insert" />
-        <select class="block-select">
-          <option value="top">Top</option>
-          <option value="bottom">Bottom</option>
-        </select>
-      </div>
-    </div>
-    <div>
-      <h3>Sequence (Drag actions here in order):</h3>
-      <div class="sequence-area" id="sequenceArea"></div>
     </div>
     <button type="button" id="generateButton">Generate Bookmarklet</button>
     <input type="text" id="bookmarkletOutput" readonly placeholder="Your bookmarklet will appear here">
@@ -436,7 +465,6 @@
           const findWord = inputs[0].value.trim();
           const replaceWord = inputs[1].value.trim();
           if (findWord && replaceWord) {
-            // Use RegExp for global replacement
             codeSteps.push(
               `document.body.innerHTML=document.body.innerHTML.replace(new RegExp(${JSON.stringify(findWord)},'g'),${JSON.stringify(replaceWord)});`
             );
