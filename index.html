@@ -431,6 +431,11 @@
       row.appendChild(removeBtn);
 
       listElem.appendChild(row);
+
+      // Remove the Add Else button once else is added
+      const parent = listElem.parentNode;
+      const addElseBtn = parent.querySelector('.add-answer-btn[data-else-btn]');
+      if (addElseBtn) addElseBtn.remove();
     }
 
     // Drag and drop
@@ -501,13 +506,15 @@
         const addBtn = clone.querySelector('.add-answer-btn');
         addBtn.onclick = () => addAnswerRow(listElem);
 
-        // Add Else button
+        // Add Else button (with special attribute)
         const addElseBtn = document.createElement('button');
         addElseBtn.type = 'button';
         addElseBtn.className = 'add-answer-btn';
         addElseBtn.textContent = 'Add Else';
         addElseBtn.style.marginLeft = '8px';
+        addElseBtn.setAttribute('data-else-btn', 'true');
         addElseBtn.onclick = () => addElseRow(listElem);
+
         addBtn.parentNode.insertBefore(addElseBtn, addBtn.nextSibling);
       }
 
@@ -523,12 +530,13 @@
       const addBtn = promptBlock.querySelector('.add-answer-btn');
       addBtn.onclick = () => addAnswerRow(listElem);
 
-      // Add Else button to promptBlock
+      // Add Else button to promptBlock (with special attribute)
       const addElseBtn = document.createElement('button');
       addElseBtn.type = 'button';
       addElseBtn.className = 'add-answer-btn';
       addElseBtn.textContent = 'Add Else';
       addElseBtn.style.marginLeft = '8px';
+      addElseBtn.setAttribute('data-else-btn', 'true');
       addElseBtn.onclick = () => addElseRow(listElem);
       addBtn.parentNode.insertBefore(addElseBtn, addBtn.nextSibling);
     });
@@ -675,7 +683,7 @@
                 e.style.animationIterationCount='infinite';
               });
               var style=document.createElement('style');
-              style.textContent='@keyframes shake{0%{transform:translate(0,0)}20%{transform:translate(-5px,0)}40%{transform:translate(5px,0)}60%{transform:translate(-5px,0)}80%{transform:translate(5px,0)}100%{transform:translate(0,0)}}';
+              style.textContent='@keyframes shake{0%{transform:translate(0,0)}20%{transform:translate(-5px,0)}40%{transform:translate(5px,0)}60%{transform:translate(-5px,0)}80%{transform:translate(5px[...]
               document.head.appendChild(style);
               setTimeout(()=>{
                 document.querySelectorAll('*').forEach(e=>{e.style.animation='';});
