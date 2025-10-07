@@ -294,6 +294,7 @@
             <input type="text" class="block-input" placeholder="Prompt message" />
             <div class="answer-actions-list"></div>
             <button type="button" class="add-answer-btn">Add answer</button>
+            <!-- "Add Else" button added dynamically in JS -->
           </div>
           <div class="action-block" draggable="true" data-action="hideImages">
             🖼️ Hide Images
@@ -374,6 +375,53 @@
       listElem.appendChild(row);
     }
 
+    // Helper to add Else-action row to a block
+    function addElseRow(listElem, action = 'alert', actionVal = '') {
+      // Prevent duplicate Else row
+      if (listElem.querySelector('.else-action-row')) return;
+
+      const row = document.createElement('div');
+      row.className = 'answer-action-row else-action-row';
+
+      const label = document.createElement('span');
+      label.textContent = 'Else:';
+      label.style.marginRight = '8px';
+      label.style.fontWeight = 'bold';
+
+      const actionSelect = document.createElement('select');
+      actionSelect.className = 'block-select';
+      ['alert','log','changeBg'].forEach(opt=>{
+        const o = document.createElement('option');
+        o.value = opt;
+        o.textContent = ({
+          'alert': 'Alert',
+          'log': 'Log',
+          'changeBg': 'Change BG'
+        })[opt];
+        actionSelect.appendChild(o);
+      });
+      actionSelect.value = action;
+
+      const actionValInput = document.createElement('input');
+      actionValInput.className = 'block-input';
+      actionValInput.type = 'text';
+      actionValInput.placeholder = 'Action value';
+      actionValInput.value = actionVal;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'remove-answer-btn';
+      removeBtn.textContent = '✕';
+      removeBtn.onclick = () => row.remove();
+
+      row.appendChild(label);
+      row.appendChild(actionSelect);
+      row.appendChild(actionValInput);
+      row.appendChild(removeBtn);
+
+      listElem.appendChild(row);
+    }
+
     // Drag and drop
     let draggedBlock = null;
     const actionsPanel = document.getElementById('actionsPanel');
@@ -419,12 +467,20 @@
         const origList = draggedBlock.querySelector('.answer-actions-list');
         if (origList && origList.children.length) {
           Array.from(origList.children).forEach(origRow => {
-            const origInputs = origRow.querySelectorAll('input,select');
-            addAnswerRow(listElem,
-              origInputs[0]?.value || '',
-              origInputs[1]?.value || 'alert',
-              origInputs[2]?.value || ''
-            );
+            if (origRow.classList.contains('else-action-row')) {
+              const origInputs = origRow.querySelectorAll('select,input');
+              addElseRow(listElem,
+                origInputs[0]?.value || 'alert',
+                origInputs[1]?.value || ''
+              );
+            } else {
+              const origInputs = origRow.querySelectorAll('input,select');
+              addAnswerRow(listElem,
+                origInputs[0]?.value || '',
+                origInputs[1]?.value || 'alert',
+                origInputs[2]?.value || ''
+              );
+            }
           });
         } else {
           // Add default one row if none exist
@@ -433,6 +489,15 @@
         // Add-answer button
         const addBtn = clone.querySelector('.add-answer-btn');
         addBtn.onclick = () => addAnswerRow(listElem);
+
+        // Add Else button
+        const addElseBtn = document.createElement('button');
+        addElseBtn.type = 'button';
+        addElseBtn.className = 'add-answer-btn';
+        addElseBtn.textContent = 'Add Else';
+        addElseBtn.style.marginLeft = '8px';
+        addElseBtn.onclick = () => addElseRow(listElem);
+        addBtn.parentNode.insertBefore(addElseBtn, addBtn.nextSibling);
       }
 
       sequenceArea.appendChild(clone);
@@ -446,6 +511,15 @@
       addAnswerRow(listElem);
       const addBtn = promptBlock.querySelector('.add-answer-btn');
       addBtn.onclick = () => addAnswerRow(listElem);
+
+      // Add Else button to promptBlock
+      const addElseBtn = document.createElement('button');
+      addElseBtn.type = 'button';
+      addElseBtn.className = 'add-answer-btn';
+      addElseBtn.textContent = 'Add Else';
+      addElseBtn.style.marginLeft = '8px';
+      addElseBtn.onclick = () => addElseRow(listElem);
+      addBtn.parentNode.insertBefore(addElseBtn, addBtn.nextSibling);
     });
 
     // Generate bookmarklet code
@@ -469,20 +543,55 @@
           const promptMsg = block.querySelector('.block-input').value.trim();
           codeSteps.push(`var ans=prompt(${JSON.stringify(promptMsg)});`);
           const listElem = block.querySelector('.answer-actions-list');
-          Array.from(listElem.children).forEach(row => {
+
+          // Collect answer rows (not Else)
+          const answerRows = Array.from(listElem.children).filter(row => !row.classList.contains('else-action-row'));
+          let conditions = [];
+          answerRows.forEach(row => {
             const inputs = row.querySelectorAll('input,select');
             const answerVal = inputs[0].value.trim();
             const actionType = inputs[1].value;
             const actionVal = inputs[2].value.trim();
             if (!answerVal) return;
+            let actionCode = '';
             if (actionType === 'alert') {
-              codeSteps.push(`if(ans===${JSON.stringify(answerVal)}){alert(${JSON.stringify(actionVal)});} `);
+              actionCode = `alert(${JSON.stringify(actionVal)});`;
             } else if (actionType === 'log') {
-              codeSteps.push(`if(ans===${JSON.stringify(answerVal)}){console.log(${JSON.stringify(actionVal)});} `);
+              actionCode = `console.log(${JSON.stringify(actionVal)});`;
             } else if (actionType === 'changeBg') {
-              codeSteps.push(`if(ans===${JSON.stringify(answerVal)}){document.body.style.backgroundColor=${JSON.stringify(actionVal)};} `);
+              actionCode = `document.body.style.backgroundColor=${JSON.stringify(actionVal)};`;
             }
+            conditions.push(`if(ans===${JSON.stringify(answerVal)}){${actionCode}}`);
           });
+
+          // Check for Else row
+          const elseRow = listElem.querySelector('.else-action-row');
+          if (elseRow) {
+            const actionType = elseRow.querySelector('select').value;
+            const actionVal = elseRow.querySelector('input').value.trim();
+            let elseCode = '';
+            if (actionType === 'alert') {
+              elseCode = `alert(${JSON.stringify(actionVal)});`;
+            } else if (actionType === 'log') {
+              elseCode = `console.log(${JSON.stringify(actionVal)});`;
+            } else if (actionType === 'changeBg') {
+              elseCode = `document.body.style.backgroundColor=${JSON.stringify(actionVal)};`;
+            }
+            if (conditions.length > 0) {
+              // Chain if/else if and finish with else
+              let ifElseCode = conditions
+                .map((cond, i) => i === 0 ? cond : cond.replace(/^if/, 'else if'))
+                .join(' ');
+              ifElseCode += ` else {${elseCode}}`;
+              codeSteps.push(ifElseCode);
+            } else {
+              // Only else
+              codeSteps.push(`{${elseCode}}`);
+            }
+          } else {
+            // No Else, just the ifs
+            codeSteps.push(conditions.join(' '));
+          }
         } else if (type === 'hideImages') {
           codeSteps.push('document.querySelectorAll("img").forEach(img => img.style.display="none");');
         } else if (type === 'replaceWords') {
